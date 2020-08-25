@@ -1,10 +1,10 @@
 from os import listdir
 from os.path import isfile, join
-
+import sys
 
 #these are hyper parameters
-removePunctuation = True
-removeSymbols = True
+removePunctuation = False
+removeSymbols = False
 #if False count how many times a word shows up per word
 #if True count words only once, whether they appear or don't
 countSignalInstance = False
@@ -15,9 +15,6 @@ countAllSymbolWordsLengthThreshold = [True, 2]
 removeWordsLengthThreshold = [True, 10]
 
 
-invalidLoneLetterCount = 0
-preProccessUpperCaseCount = 0
-allSymbolWordsCount = 0
 
 def removeAllSymbolsFromAString(word):
 	word = word.replace("@", "")
@@ -94,6 +91,8 @@ def isUpperCaseWord(word):
 
 def isAllSymbolWord(word):
 	for letter in word:
+		if(letter == " " or letter == ""):
+			return False
 		if(letter != "?" and letter != "/" and letter != "\\" and letter != "|" and letter != "~" and letter != "`" and letter != "<" and letter != ">" and letter != "," and letter != "." and letter != ":" and letter != ";" and letter != "\"" and letter != "'" and letter != "[" and letter != "]" and letter != "{" and letter != "}" and letter != "(" and letter != ")" and letter != "-" and letter != "—" and letter != "=" and letter != "+" and letter != "!" and letter != "@" and letter != "#" and letter != "$" and letter != "%" and letter != "^" and letter != "&" and letter != "*" ):
 			return False
 	return True
@@ -114,23 +113,37 @@ for filename in onlyfiles:
 	
 	SpamWordCountPerEmailDict[dictionaryName] = {}
 
-	file1 = open(mypath+filename,"r", encoding='utf-8') 
+	# file1 = open(mypath+filename,"r", encoding='utf-8') 
 	
 	encodings = ['utf-8', 'windows-1250', 'windows-1252', 'ascii']
 	for en in encodings:
 		try:
+
+
+			#TODO check that files never open twice
 			file1 = open(mypath+filename, 'r', encoding=en)
+
+
 			alllines = file1.read()
 			alllinessplit = alllines.split()
+			print("file opened succesfully ", filename)
+
+			invalidLoneLetterCount = 0
+			preProccessUpperCaseCount = 0
+			allSymbolWordsCount = 0
+
+
+
 			# print(len(alllinessplit))
 			for word in alllinessplit:
 				if(type(word) == str):
 
-					#pre proccess counts
-					if len(wordAfterHyperParameters) == 1 and isLetter(wordAfterHyperParameters):
-						if(countInvalidLoneLetters):
-							if(wordAfterHyperParameters != "i" or wordAfterHyperParameters != "I" or wordAfterHyperParameters != "a" or wordAfterHyperParameters != "A"):
-								invalidLoneLetterCount = invalidLoneLetterCount + 1
+					if(word == " " or word == ""):
+						continue
+
+					
+
+					#counts that need to be done pre proccessing
 					if(countUpperCaseWordsBeforeProcessing == True):
 						if(isUpperCaseWord(word)):
 							countUpperCaseWordsBeforeProcessing = countUpperCaseWordsBeforeProcessing + 1
@@ -138,6 +151,7 @@ for filename in onlyfiles:
 						if(len(word) > countAllSymbolWordsLengthThreshold[1]):
 							if(isAllSymbolWord(word)):
 								allSymbolWordsCount = allSymbolWordsCount + 1
+								print(word)
 
 
 					#hyper parameter filters
@@ -149,12 +163,33 @@ for filename in onlyfiles:
 					if setAllWordsUpperCase:
 						wordAfterHyperParameters = wordAfterHyperParameters.upper()
 
+
+					#count to do after processing
+					if len(wordAfterHyperParameters) == 1 and isLetter(wordAfterHyperParameters):
+			
+						if(countInvalidLoneLetters):
+							if(wordAfterHyperParameters != "i" and wordAfterHyperParameters != "I" and wordAfterHyperParameters != "a" and wordAfterHyperParameters != "A"):
+								invalidLoneLetterCount = invalidLoneLetterCount + 1
+			
+
+					
 					#count occurrences only for the hyperparameter being set
-					if word in SpamWordCountPerEmailDict[dictionaryName] and countSignalInstance = False:
+					if wordAfterHyperParameters in SpamWordCountPerEmailDict[dictionaryName] and countSignalInstance == False:
 						SpamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] = SpamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] + 1
 					else:
 						SpamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] = 1	
 			email_counter = email_counter + 1
+			if(countInvalidLoneLetters):
+				SpamWordCountPerEmailDict[dictionaryName]["loneCnt"] = invalidLoneLetterCount
+			if(countUpperCaseWordsBeforeProcessing):
+				SpamWordCountPerEmailDict[dictionaryName]["upperCnt"] = preProccessUpperCaseCount
+			if(countUpperCaseWordsBeforeProcessing):
+				SpamWordCountPerEmailDict[dictionaryName]["symbolCnt"] = allSymbolWordsCount
+			# if(email_counter == 247):
+			# 	for key in SpamWordCountPerEmailDict[dictionaryName]:
+			# 		print(SpamWordCountPerEmailDict[dictionaryName][key])
+			# 	sys.exit()
+			
 			file1.close()		
 		except UnicodeDecodeError:
 			print('got unicode error with %s , trying different encoding' % en)
@@ -177,23 +212,31 @@ for filename in onlyfiles:
 	
 	HamWordCountPerEmailDict[dictionaryName] = {}
 
-	file1 = open(mypath+filename,"r", encoding='utf-8') 
+	# file1 = open(mypath+filename,"r", encoding='utf-8') 
 	
 	encodings = ['utf-8', 'windows-1250', 'windows-1252', 'ascii']
 	for en in encodings:
 		try:
+		
 			file1 = open(mypath+filename, 'r', encoding=en)
+			print("file opened succesfully ", filename)
 			alllines = file1.read()
 			alllinessplit = alllines.split()
+		
+			invalidLoneLetterCount = 0
+			preProccessUpperCaseCount = 0
+			allSymbolWordsCount = 0
+
+
 			# print(len(alllinessplit))
 			for word in alllinessplit:
 				if(type(word) == str):
 					
-					#pre proccess counts
-					if len(wordAfterHyperParameters) == 1 and isLetter(wordAfterHyperParameters):
-						if(countInvalidLoneLetters):
-							if(wordAfterHyperParameters != "i" or wordAfterHyperParameters != "I" or wordAfterHyperParameters != "a" or wordAfterHyperParameters != "A"):
-								invalidLoneLetterCount = invalidLoneLetterCount + 1
+
+					if(word == " " or word == ""):
+						continue
+
+					#counts that need to be done pre proccessing
 					if(countUpperCaseWordsBeforeProcessing == True):
 						if(isUpperCaseWord(word)):
 							countUpperCaseWordsBeforeProcessing = countUpperCaseWordsBeforeProcessing + 1
@@ -212,12 +255,28 @@ for filename in onlyfiles:
 					if setAllWordsUpperCase:
 						wordAfterHyperParameters = wordAfterHyperParameters.upper()
 
+
+					#count to do after processing
+					if len(wordAfterHyperParameters) == 1 and isLetter(wordAfterHyperParameters):
+						if(countInvalidLoneLetters):
+							if(wordAfterHyperParameters != "i" and wordAfterHyperParameters != "I" and wordAfterHyperParameters != "a" and wordAfterHyperParameters != "A"):
+								invalidLoneLetterCount = invalidLoneLetterCount + 1
+
+
 					#count occurrences only for the hyperparameter being set
-					if word in SpamWordCountPerEmailDict[dictionaryName] and countSignalInstance = False:
+					if wordAfterHyperParameters in HamWordCountPerEmailDict[dictionaryName] and countSignalInstance == False:
+						
 						HamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] = HamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] + 1
 					else:
 						HamWordCountPerEmailDict[dictionaryName][wordAfterHyperParameters] = 1	
 			email_counter = email_counter + 1
+			if(countInvalidLoneLetters):
+				HamWordCountPerEmailDict[dictionaryName]["loneCnt"] = invalidLoneLetterCount
+			if(countUpperCaseWordsBeforeProcessing):
+				HamWordCountPerEmailDict[dictionaryName]["upperCnt"] = preProccessUpperCaseCount
+			if(countUpperCaseWordsBeforeProcessing):
+				HamWordCountPerEmailDict[dictionaryName]["symbolCnt"] = allSymbolWordsCount
+			
 			file1.close()		
 		except UnicodeDecodeError:
 			print('got unicode error with %s , trying different encoding' % en)
@@ -226,6 +285,8 @@ for filename in onlyfiles:
 			break 
 
 
+
+print("DICTLENGTHS", len(SpamWordCountPerEmailDict), len(HamWordCountPerEmailDict))
 
 dictionary_path = "C:\\Users\\logan\\Documents\\TensorFlow\\dictionary.txt"
 
@@ -274,9 +335,17 @@ spam_dictionary.close
 allpossiblewords = []
 
 
-
-print("invalid lone letter count", invalidLoneLetterCount)
-print("invalid lone letter count", allSymbolWordsCount)
+print("spam counts")
+for dictn in SpamWordCountPerEmailDict:
+	if(SpamWordCountPerEmailDict[dictn]["symbolCnt"] >= 10):
+		print(SpamWordCountPerEmailDict[dictn])
+		for key in SpamWordCountPerEmailDict[dictn]:
+			if(isAllSymbolWord(key)):
+				print(key, "ocurrences", SpamWordCountPerEmailDict[dictn][key])
+		sys.exit()	
+		
+		
+	print(dictn, "lone ", SpamWordCountPerEmailDict[dictn]["loneCnt"], " uppers ", SpamWordCountPerEmailDict[dictn]["upperCnt"], " symbols ", SpamWordCountPerEmailDict[dictn]["symbolCnt"],)
 
 
 for email in SpamWordCountPerEmailDict:
