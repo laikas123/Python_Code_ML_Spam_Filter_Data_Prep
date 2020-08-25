@@ -94,7 +94,7 @@ def isUpperCaseWord(word):
 
 def isAllSymbolWord(word):
 	for letter in word:
-		if(letter != "?" or letter != "/" or letter != "\\" or letter != "|" or letter != "~" or letter != "`" or letter != "<" or letter != ">" or letter != "," or letter != "." or letter != ":" or letter != ";" or letter != "\"" or letter != "'" or letter != "[" or letter != "]" or letter != "{" or letter != "}" or letter != "(" or letter != ")" or letter != "-" or letter != "—" or letter != "=" or letter != "+" or letter != "!" or letter != "@" or letter != "#" or letter != "$" or letter != "%" or letter != "^" or letter != "&" or letter != "*" ):
+		if(letter != "?" and letter != "/" and letter != "\\" and letter != "|" and letter != "~" and letter != "`" and letter != "<" and letter != ">" and letter != "," and letter != "." and letter != ":" and letter != ";" and letter != "\"" and letter != "'" and letter != "[" and letter != "]" and letter != "{" and letter != "}" and letter != "(" and letter != ")" and letter != "-" and letter != "—" and letter != "=" and letter != "+" and letter != "!" and letter != "@" and letter != "#" and letter != "$" and letter != "%" and letter != "^" and letter != "&" and letter != "*" ):
 			return False
 	return True
 
@@ -275,7 +275,8 @@ allpossiblewords = []
 
 
 
-
+print("invalid lone letter count", invalidLoneLetterCount)
+print("invalid lone letter count", allSymbolWordsCount)
 
 
 for email in SpamWordCountPerEmailDict:
