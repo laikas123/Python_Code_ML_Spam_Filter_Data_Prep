@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
 import os
 from os import listdir
 from os.path import isfile, join
@@ -5,18 +11,16 @@ import re
 import sys
 
 
-#SPAM PATH HAM PATH NORM DICT PATH SPAM DICT PATH GLOBAL VARIABLES 
+#SPAM PATH HAM PATH 
 SPAM_PATH = os.path.join("HamandSpam", "Spam", "spam") 
 
 HAM_PATH = os.path.join("HamandSpam", "Ham", "easy_ham") 
 
-NORMAL_DICTIONARY_PATH = os.path.join("Dictionaries", "dictionary.txt") 
 
-SPAM_DICTIONARY_PATH = os.path.join("Dictionaries", "spamdictionary.txt") 
 
 #HYPERPARAMETERS 
-REMOVE_PUNCTUATION = False
-REMOVE_SYMBOLS = False
+REMOVE_PUNCTUATION = True
+REMOVE_SYMBOLS = True
 # if False count how many times a word shows up per word
 # if True count words only once, whether they appear or don't
 COUNT_SINGLE_INSTANCE = False
@@ -25,7 +29,10 @@ COUNT_INVALID_LONE_LETTERS = True
 CHECK_IF_EMAIL_CONTAINS_MARKUP = True
 COUNT_UPPER_CASE_WORDS_BEFORE_PROCESSING = True
 COUNT_ALL_SYMBOL_WORDS_LENGTH_THRESHOLD = [True, 2]
-REMOVE_WORDS_LENGTH_THRESHOLD = [True, 4]
+#some emails have rather long words, especially spam
+#this leads to a large dataset when looking at unique words
+#setting shortest and longest word limits help reduce dataset size
+REMOVE_WORDS_LENGTH_THRESHOLD = [True, 4, 8]
 CHECK_MARKUP_TEXT_PRESENCE = True
 
 #HELPER FUNCTIONS 
@@ -107,7 +114,14 @@ def isMarkupWord(word):
         return False
     else:
         return True
-
+#keys used in the containers for data that shouldn't be overwritten if an email contains them
+def isSpecialWord(word):
+    if(word == "upperCnt" or word == "symbolCnt" or word == "loneCnt" or word == "markupPrsnt" or word == "IsSpam"):
+        print("Special Word was present")
+        sys.Exit()
+        return True
+    else:
+        return False
 
 
 def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm_dict_path = NORMAL_DICTIONARY_PATH,
@@ -152,6 +166,9 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                 for word in alllinessplit:
                     if(isinstance(word, str)):
 
+                        if(isSpecialWord(word)):
+                            continue
+                        
                         if(word == " " or word == ""):
                             continue
 
@@ -159,6 +176,7 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                         if(check_markup_text_presence):
                             if(isMarkupWord(word)):
                                 sawMarkupWord = True
+                                continue
                                 
                             
                         # counts that need to be done pre proccessing
@@ -166,9 +184,10 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                             if(isUpperCaseWord(word)):
                                 preProccessUpperCaseCount = preProccessUpperCaseCount + 1
                         if(count_all_symbol_words_length_threshold[0]):
-                            if(len(word) > count_all_symbol_words_length_threshold[1]):
+                            if(len(word) >= count_all_symbol_words_length_threshold[1]):
                                 if(isAllSymbolWord(word)):
                                     allSymbolWordsCount = allSymbolWordsCount + 1
+                                    continue
                                     
 
                         # hyper parameter filters
@@ -195,7 +214,8 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                                 dictionaryName] and count_single_instance == False:
                             spam_word_count_per_email_data[dictionaryName][wordAfterHyperParameters] = spam_word_count_per_email_data[
                                 dictionaryName][wordAfterHyperParameters] + 1
-                        else:
+                        elif (len(wordAfterHyperParameters) > remove_words_length_threshold[1] and 
+                             len(wordAfterHyperParameters) < remove_words_length_threshold[2]):
                             spam_word_count_per_email_data[dictionaryName][wordAfterHyperParameters] = 1
                 email_counter = email_counter + 1
                 #if hyperparameters were enabled add their respective values to the container
@@ -246,6 +266,9 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                 
                 for word in alllinessplit:
                     if(isinstance(word, str)):
+                        
+                        if(isSpecialWord(word)):
+                            continue
 
                         if(word == " " or word == ""):
                             continue
@@ -254,6 +277,7 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                         if(check_markup_text_presence):
                             if(isMarkupWord(word)):
                                 sawMarkupWord = True
+                                continue
                                     
                         # counts that need to be done pre proccessing
                         if(count_upper_case_words_before_processing):
@@ -263,6 +287,7 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                             if(len(word) > count_all_symbol_words_length_threshold[1]):
                                 if(isAllSymbolWord(word)):
                                     allSymbolWordsCount = allSymbolWordsCount + 1
+                                    continue
                                     
 
                         # hyper parameter filters
@@ -290,7 +315,8 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
 
                             ham_word_count_per_email_data[dictionaryName][wordAfterHyperParameters] = ham_word_count_per_email_data[
                                 dictionaryName][wordAfterHyperParameters] + 1
-                        else:
+                        elif (len(wordAfterHyperParameters) > remove_words_length_threshold[1] and 
+                             len(wordAfterHyperParameters) < remove_words_length_threshold[2]):
                             ham_word_count_per_email_data[dictionaryName][wordAfterHyperParameters] = 1
                 email_counter = email_counter + 1
                 if(count_invalid_lone_letters):
@@ -317,86 +343,264 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
         len(spam_word_count_per_email_data), " Ham: ",
         len(ham_word_count_per_email_data))
 
-
-    dictionary = open(norm_dict_path, "r", encoding='utf-8')
-
-    all_norm_dictionary_words = []
-
-    alllines = dictionary.read()
-    alllinessplit = alllines.split()
-
-    for word in alllinessplit:
-        # upper case for the purpose of comparison later
-        all_norm_dictionary_words.append(word.upper())
-
-    dictionary.close()
+    return spam_word_count_per_email_data, ham_word_count_per_email_data
 
 
-    
-
-    spam_dictionary = open(spam_dict_path, "r", encoding='utf-8')
-
-    all_spam_dictionary_words = []
-
-    alllinesspam = spam_dictionary.read()
-    alllinessplitspam = alllinesspam.split()
-
-    for word in alllinessplitspam:
-        # upper case for the purpose of comparison later
-        all_spam_dictionary_words.append(word.upper())
-
-    spam_dictionary.close()
-
-    print("DONE READING ALL DICTIONARY FILES", "Length Normal Dict: ", len(all_norm_dictionary_words),
-         " Length Spam Dict: ", len(all_spam_dictionary_words))
-
-    return spam_word_count_per_email_data, ham_word_count_per_email_data, all_norm_dictionary_words, all_spam_dictionary_words
+spam_word_count_container, ham_word_count_container = GetDataApplyHyperparameters()
 
 
-spam_word_count_container, ham_word_count_container, norm_dict, spam_dict = GetDataApplyHyperparameters()
+
+# In[83]:
 
 
 
 
+# allpossiblewords = []
 
-
-
-#Cell 2
-
-
-
-
-
-allpossiblewords = []
-
+totalWordCount = 0
 
 for email in spam_word_count_container:
-    if(spam_word_count_container[email]["markupPrsnt"] == 1):
-        print(spam_word_count_container[email])
-#         sys.exit()
     for word in spam_word_count_container[email]:
-        if(allpossiblewords.count(word) == 0):
-            # if a threshold for how long a word is to be counted is specified
-            # check the word is valid length
-            if(REMOVE_WORDS_LENGTH_THRESHOLD[0]):
-                if(len(word) > REMOVE_WORDS_LENGTH_THRESHOLD[1]):
-                    allpossiblewords.append(word)
-                   # print(len(allpossiblewords), "spam addition")
-                
-sys.exit()
+        if(isMarkupWord(word) or isAllSymbolWord(word) or isPunctuation(word)):
+            print(word)
+        totalWordCount = totalWordCount + 1
+
 for email in ham_word_count_container:
-
     for word in ham_word_count_container[email]:
-        if(allpossiblewords.count(word) == 0):
-            # if a threshold for how long a word is to be counted is specified
-            # check the word is valid length
-            if(REMOVE_WORDS_LENGTH_THRESHOLD[0]):
-                if(len(word) > REMOVE_WORDS_LENGTH_THRESHOLD[1]):
-                    allpossiblewords.append(word)
-                    print(len(allpossiblewords), "ham addition")
-              
+        if(isMarkupWord(word) or isAllSymbolWord(word) or isPunctuation(word)):
+            print(word)
+        totalWordCount = totalWordCount + 1
 
 
-print(len(allpossiblewords), "total words")
 
+
+# In[84]:
+
+
+print(totalWordCount)
+
+
+# In[85]:
+
+
+import random
+import pandas as pd
+import numpy as np
+#to generate random indices when picking words from an email
+def randomListOfXValuesInRange(high_lim, number_items_to_return):
+    return_vals = []
+
+    if(number_items_to_return <= 0):
+        return return_vals
+    
+    while len(return_vals) < number_items_to_return:
+        random_num = random.randrange(high_lim)
+        if(return_vals.count(random_num) == 0):
+            return_vals.append(random_num)
+    return return_vals
+
+
+
+
+def SamplePortionFromEveryEmail(container_spam, container_ham, portion_size):
+    
+    possible_words_for_sample = []
+    
+    for email in container_spam:
+        total_words_in_email = len(container_spam[email])
+        
+        random_indices = randomListOfXValuesInRange(total_words_in_email, int(round(portion_size*total_words_in_email)))
+        current_index = 0
+        for word in container_spam[email]:
+            if(random_indices.count(current_index) > 0 ):
+                possible_words_for_sample.append(word)
+            current_index = current_index + 1
+            
+    for email in container_ham:
+        total_words_in_email = len(container_ham[email])
+        
+        random_indices = randomListOfXValuesInRange(total_words_in_email, int(round(portion_size*total_words_in_email)))
+        current_index = 0
+        for word in container_ham[email]:
+            if(random_indices.count(current_index) > 0 ):
+                possible_words_for_sample.append(word)
+            current_index = current_index + 1
+    
+    return possible_words_for_sample
+
+
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[86]:
+
+
+def createDataFrameFromSampleWords(sample_words):
+
+    #Let 1 = spam and 0 = ham
+    all_train_rows = []
+
+    for email in spam_word_count_container:
+        single_train_row = []
+
+        #check if that email has the word, 
+        #1 if it does, 0 if not
+        for word in sample_words:
+            if(word in spam_word_count_container[email]):
+                single_train_row.append(1)
+            else:
+                single_train_row.append(0)
+        #append 1 for spam for last column which is "IsSpam"
+        single_train_row.append(1)
+        all_train_rows.append(single_train_row)
+
+    for email in ham_word_count_container:
+        single_train_row = []
+
+        #check if that email has the word, 
+        #1 if it does, 0 if not
+        for word in sample_words:
+            if(word in ham_word_count_container[email]):
+                single_train_row.append(1)
+            else:
+                single_train_row.append(0)
+        #append 0 for ham for last column which is "IsSpam"
+        single_train_row.append(0)
+        all_train_rows.append(single_train_row)
+
+
+
+
+    is_spam_col = "IsSpam"
+    sample_words.append(is_spam_col)
+
+
+    Train_df = pd.DataFrame(all_train_rows, columns = sample_words)
+
+    return Train_df
+
+
+# In[87]:
+
+
+from sklearn.model_selection import cross_val_predict
+from sklearn.ensemble import RandomForestClassifier
+
+def calculateProbasForTrainDataFrame(train_df):
+    X_train = Train_df.drop("IsSpam", axis = 1)
+    y_train = Train_df["IsSpam"]
+    forest_clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    y_probas_forest = cross_val_predict(forest_clf, X_train, y_train, cv=3,
+                                    method="predict_proba")
+    return y_probas_forest
+    
+
+
+# In[88]:
+
+
+def sampleXTimesAndAverageProbas(times_to_sample):
+    probas_per_sample = []
+    times_sampled = 0
+    while times_sampled < times_to_sample:
+        words_from_sample = SamplePortionFromEveryEmail(spam_word_count_container, ham_word_count_container, 0.1)
+        df_for_sample = createDataFrameFromSampleWords(words_from_sample)
+        probas_to_append = calculateProbasForTrainDataFrame(df_for_sample)
+        probas_per_sample.append(probas_to_append[:,0])
+        times_sampled = times_sampled + 1
+    
+    return probas_per_sample
+    
+probas_for_ten_samples = sampleXTimesAndAverageProbas(10)
+
+
+# In[97]:
+
+
+print(np.shape(probas_for_ten_samples))
+
+
+# In[98]:
+
+
+def calcAverageForColumn2DProbaArray(proba_array):
+    
+    average_probas_to_return = []
+    
+    number_cols = len(proba_array[0])
+    
+    col_index = 0
+    
+    proba_as_np = np.asarray(proba_array)
+    
+    while col_index < number_cols:
+        current_cols = proba_as_np[:,col_index]
+        total_cols = len(current_cols)
+        mean_score = (sum(current_cols)/total_cols)
+        average_probas_to_return.append(mean_score)
+        col_index = col_index + 1
+    
+
+    return average_probas_to_return
+average_of_probas = calcAverageForColumn2DProbaArray(probas_for_ten_samples)
+
+
+# In[99]:
+
+
+print(np.shape(np.asarray(average_of_probas)))
+
+
+# In[100]:
+
+
+def getYValsFromDataset():
+    y_train_return = []
+    for email in spam_word_count_container:
+          
+        #append 1 for spam
+        y_train_return.append(1)
+        
+
+    for email in ham_word_count_container:
+          
+        #append 0 for ham
+        y_train_return.append(0)
+    
+    return y_train_return
+y_train_for_accuracy = getYValsFromDataset()
+
+
+# In[101]:
+
+
+print(average_of_probas[0:10])
+
+#need to round to 0 or 1
+rounded_averages = [int(round(val)) for val in average_of_probas]
+
+print(rounded_averages[0:10])
+
+inverted_rounded_averages = []
+for value in rounded_averages:
+    if(value == 1):
+        inverted_rounded_averages.append(0)
+    else:
+        inverted_rounded_averages.append(1)
+print(inverted_rounded_averages[0:10])
+
+
+# In[102]:
+
+
+from sklearn.metrics import accuracy_score
+accuracy_score(y_train_for_accuracy, inverted_rounded_averages)
 
