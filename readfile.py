@@ -1,7 +1,9 @@
 import os
 from os import listdir
 from os.path import isfile, join
+import re
 import sys
+
 
 #SPAM PATH HAM PATH NORM DICT PATH SPAM DICT PATH GLOBAL VARIABLES 
 SPAM_PATH = os.path.join("HamandSpam", "Spam", "spam") 
@@ -20,69 +22,54 @@ REMOVE_SYMBOLS = False
 COUNT_SINGLE_INSTANCE = False
 SET_ALL_WORDS_UPPER_CASE = True
 COUNT_INVALID_LONE_LETTERS = True
+CHECK_IF_EMAIL_CONTAINS_MARKUP = True
 COUNT_UPPER_CASE_WORDS_BEFORE_PROCESSING = True
 COUNT_ALL_SYMBOL_WORDS_LENGTH_THRESHOLD = [True, 2]
-REMOVE_WORDS_LENGTH_THRESHOLD = [True, 10]
+REMOVE_WORDS_LENGTH_THRESHOLD = [True, 4]
+CHECK_MARKUP_TEXT_PRESENCE = True
 
 #HELPER FUNCTIONS 
 def removeAllSymbolsFromAString(word):
-        word = word.replace("@", "")
-        word = word.replace("#", "")
-        word = word.replace("$", "")
-        word = word.replace("%", "")
-        word = word.replace("^", "")
-        word = word.replace("&", "")
-        word = word.replace("*", "")
-        word = word.replace("~", "")
-        word = word.replace("`", "")
-        word = word.replace("<", "")
-        word = word.replace(">", "")
-        word = word.replace("=", "")
-        word = word.replace("+", "")
-        word = word.replace("|", "")
-
-        return word
-
-
-def removeAllPunctFromAString(word):
-    word = word.replace(".", "")
-    word = word.replace("?", "")
-    word = word.replace(",", "")
-    word = word.replace("'", "")
-    word = word.replace("-", "")
-    word = word.replace("—", "")
-    word = word.replace("!", "")
-    word = word.replace(":", "")
-    word = word.replace(";", "")
-    word = word.replace("[", "")
-    word = word.replace("]", "")
-    word = word.replace("{", "")
-    word = word.replace("}", "")
-    word = word.replace("(", "")
-    word = word.replace(")", "")
-    word = word.replace("/", "")
-    word = word.replace("\\", "")
-    word = word.replace('"', "")
+    for letter in word:
+        if(isSymbol(letter)):
+            word = word.replace(letter, "")
 
     return word
 
 
+def removeAllPunctFromAString(word):
+    for letter in word:
+        if(isPunctuation(letter)):
+            word = word.replace(letter, "")
+
+    return word
+    
+
+def isPunctuation(letter):
+    punctuation_text = re.search(r"([/./?\,\'\-\—\!\:\;\[\]\(\)\/\\\"])", letter)
+    if(punctuation_text is None):
+        return False
+    else:
+        return True
+    
+
 # checker function for making sure invalid lone letter count only
 # increments for actual letters
 def isLetter(letter):
-    letter = letter.upper()
-    if(letter == "A" or letter == "B" or letter == "C" or letter == "D" or letter == "E" or letter == "F" or letter == "G" or letter == "H" or letter == "I" or letter == "J" or letter == "K" or letter == "L" or letter == "M" or letter == "N" or letter == "P" or letter == "Q" or letter == "R" or letter == "S" or letter == "T" or letter == "U" or letter == "V" or letter == "W" or letter == "X" or letter == "Y" or letter == "Z"):
-        return True
-    else:
+    letter_text = re.search(r"([A-Za-z])", letter)
+    if(letter_text is None):
         return False
+    else:
+        return True
 
 # capital letter checker, same as above function but don't capitalize
 # input prior to checking
 def isCapitalLetter(letter):
-    if(letter == "A" or letter == "B" or letter == "C" or letter == "D" or letter == "E" or letter == "F" or letter == "G" or letter == "H" or letter == "I" or letter == "J" or letter == "K" or letter == "L" or letter == "M" or letter == "N" or letter == "O" or letter == "P" or letter == "Q" or letter == "R" or letter == "S" or letter == "T" or letter == "U" or letter == "V" or letter == "W" or letter == "X" or letter == "Y" or letter == "Z"):
-        return True
-    else:
+    letter_text = re.search(r"([A-Z])", letter)
+    if(letter_text is None):
         return False
+    else:
+        return True
 
 
 def isUpperCaseWord(word):
@@ -101,13 +88,25 @@ def isUpperCaseWord(word):
     return True
 
 
+def isSymbol(letter):
+    symbol_text = re.search(r"([\?\/\\\|\~\`\<\>\,\.\:\;\\\'\{\}\-\—\=\+\!\@\#\\\$\%\^\&\*])", letter)
+    if(symbol_text is None):
+        return False
+    else:
+        return True
 def isAllSymbolWord(word):
     for letter in word:
         if(letter == " " or letter == ""):
             return False
-        if(letter != "?" and letter != "/" and letter != "\\" and letter != "|" and letter != "~" and letter != "`" and letter != "<" and letter != ">" and letter != "," and letter != "." and letter != ":" and letter != ";" and letter != "\"" and letter != "'" and letter != "[" and letter != "]" and letter != "{" and letter != "}" and letter != "(" and letter != ")" and letter != "-" and letter != "—" and letter != "=" and letter != "+" and letter != "!" and letter != "@" and letter != "#" and letter != "$" and letter != "%" and letter != "^" and letter != "&" and letter != "*"):
+        if(isSymbol(letter) != True):
             return False
     return True
+def isMarkupWord(word):
+    markup_text = re.search(r"\<([A-Za-z0-9_]+)\>", word)
+    if(markup_text is None):
+        return False
+    else:
+        return True
 
 
 
@@ -118,7 +117,8 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                          count_invalid_lone_letters = COUNT_INVALID_LONE_LETTERS, 
                         count_upper_case_words_before_processing = COUNT_UPPER_CASE_WORDS_BEFORE_PROCESSING,
                         count_all_symbol_words_length_threshold = COUNT_ALL_SYMBOL_WORDS_LENGTH_THRESHOLD,
-                        remove_words_length_threshold = REMOVE_WORDS_LENGTH_THRESHOLD):
+                        remove_words_length_threshold = REMOVE_WORDS_LENGTH_THRESHOLD, 
+                                check_markup_text_presence = CHECK_MARKUP_TEXT_PRESENCE):
     
     
     onlyfiles = [f for f in listdir(spam_path) if isfile(os.path.join(spam_path, f))]
@@ -147,6 +147,7 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                 preProccessUpperCaseCount = 0
                 allSymbolWordsCount = 0
 
+                sawMarkupWord = False
 
                 for word in alllinessplit:
                     if(isinstance(word, str)):
@@ -154,6 +155,12 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                         if(word == " " or word == ""):
                             continue
 
+                        #markup check should be done before all processing
+                        if(check_markup_text_presence):
+                            if(isMarkupWord(word)):
+                                sawMarkupWord = True
+                                
+                            
                         # counts that need to be done pre proccessing
                         if(count_upper_case_words_before_processing):
                             if(isUpperCaseWord(word)):
@@ -191,12 +198,18 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                         else:
                             spam_word_count_per_email_data[dictionaryName][wordAfterHyperParameters] = 1
                 email_counter = email_counter + 1
+                #if hyperparameters were enabled add their respective values to the container
                 if(count_invalid_lone_letters):
                     spam_word_count_per_email_data[dictionaryName]["loneCnt"] = invalidLoneLetterCount
                 if(count_upper_case_words_before_processing):
                     spam_word_count_per_email_data[dictionaryName]["upperCnt"] = preProccessUpperCaseCount
                 if(count_all_symbol_words_length_threshold):
                     spam_word_count_per_email_data[dictionaryName]["symbolCnt"] = allSymbolWordsCount
+                if(check_markup_text_presence):
+                    if(sawMarkupWord):
+                        spam_word_count_per_email_data[dictionaryName]["markupPrsnt"] = 1
+                    else:
+                        spam_word_count_per_email_data[dictionaryName]["markupPrsnt"] = 0
                 file1.close()
             except UnicodeDecodeError:
                 print('got unicode error with %s , trying different encoding' % en)
@@ -228,13 +241,20 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                 invalidLoneLetterCount = 0
                 preProccessUpperCaseCount = 0
                 allSymbolWordsCount = 0
-
+                
+                sawMarkupWord = False
                 
                 for word in alllinessplit:
                     if(isinstance(word, str)):
 
                         if(word == " " or word == ""):
                             continue
+                            
+                        #markup check should be done before all processing
+                        if(check_markup_text_presence):
+                            if(isMarkupWord(word)):
+                                sawMarkupWord = True
+                                    
                         # counts that need to be done pre proccessing
                         if(count_upper_case_words_before_processing):
                             if(isUpperCaseWord(word)):
@@ -279,7 +299,11 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
                     ham_word_count_per_email_data[dictionaryName]["upperCnt"] = preProccessUpperCaseCount
                 if(count_all_symbol_words_length_threshold[0]):
                     ham_word_count_per_email_data[dictionaryName]["symbolCnt"] = allSymbolWordsCount
-
+                if(check_markup_text_presence):
+                    if(sawMarkupWord):
+                        ham_word_count_per_email_data[dictionaryName]["markupPrsnt"] = 1
+                    else:
+                        ham_word_count_per_email_data[dictionaryName]["markupPrsnt"] = 0
                 file1.close()
             except UnicodeDecodeError:
                 print('got unicode error with %s , trying different encoding' % en)
@@ -293,9 +317,6 @@ def GetDataApplyHyperparameters(spam_path = SPAM_PATH, ham_path = HAM_PATH, norm
         len(spam_word_count_per_email_data), " Ham: ",
         len(ham_word_count_per_email_data))
 
-    
-    
-    
 
     dictionary = open(norm_dict_path, "r", encoding='utf-8')
 
@@ -340,51 +361,19 @@ spam_word_count_container, ham_word_count_container, norm_dict, spam_dict = GetD
 
 
 
+#Cell 2
+
+
+
+
+
 allpossiblewords = []
 
 
-print("spam counts")
-for dictn in spam_word_count_container:
-    if(spam_word_count_container[dictn]["upperCnt"] >= 10):
-        print(spam_word_count_container[dictn])
-        for key in spam_word_count_container[dictn]:
-            if(isUpperCaseWord(key)):
-                print(key, "ocurrences", spam_word_count_container[dictn][key])
-
-
-    print(
-        dictn,
-        "lone ",
-        spam_word_count_container[dictn]["loneCnt"],
-        " uppers ",
-        spam_word_count_container[dictn]["upperCnt"],
-        " symbols ",
-        spam_word_count_container[dictn]["symbolCnt"],
-    )
-
-print("ham counts")
-for dictn in ham_word_count_container:
-    if(ham_word_count_container[dictn]["upperCnt"] >= 10):
-        print(ham_word_count_container[dictn])
-        for key in ham_word_count_container[dictn]:
-            if(isAllSymbolWord(key)):
-                print(key, "ocurrences", ham_word_count_container[dictn][key])
-        sys.exit()
-
-    print(
-        dictn,
-        "lone ",
-        ham_word_count_container[dictn]["loneCnt"],
-        " uppers ",
-        ham_word_count_container[dictn]["upperCnt"],
-        " symbols ",
-        ham_word_count_container[dictn]["symbolCnt"],
-    )
-
-
-
 for email in spam_word_count_container:
-
+    if(spam_word_count_container[email]["markupPrsnt"] == 1):
+        print(spam_word_count_container[email])
+#         sys.exit()
     for word in spam_word_count_container[email]:
         if(allpossiblewords.count(word) == 0):
             # if a threshold for how long a word is to be counted is specified
@@ -392,9 +381,9 @@ for email in spam_word_count_container:
             if(REMOVE_WORDS_LENGTH_THRESHOLD[0]):
                 if(len(word) > REMOVE_WORDS_LENGTH_THRESHOLD[1]):
                     allpossiblewords.append(word)
-            else:
-                allpossiblewords.append(word)
-
+                   # print(len(allpossiblewords), "spam addition")
+                
+sys.exit()
 for email in ham_word_count_container:
 
     for word in ham_word_count_container[email]:
@@ -404,55 +393,10 @@ for email in ham_word_count_container:
             if(REMOVE_WORDS_LENGTH_THRESHOLD[0]):
                 if(len(word) > REMOVE_WORDS_LENGTH_THRESHOLD[1]):
                     allpossiblewords.append(word)
-            else:
-                allpossiblewords.append(word)
+                    print(len(allpossiblewords), "ham addition")
+              
 
 
 print(len(allpossiblewords), "total words")
 
 
-# THIS CODE BELOW IS GOOD
-
-
-count = 0
-for email in spam_word_count_container:
-    dictionaryWords = 0
-    spamWords = 0
-    totalWords = 0
-    for word in spam_word_count_container[email]:
-        totalWords = totalWords + 1
-        if(all_norm_dictionary_words.count(word.upper()) > 0):
-            dictionaryWords = dictionaryWords + 1
-        if(all_spam_dictionary_words.count(word.upper()) > 0):
-            spamWords = spamWords + 1
-            # print(word)
-
-    # print("spam email: ", email, "has %", 100*(dictionaryWords/totalWords), "dictionary words and ", "has %", 100*(spamWords/totalWords), "spam words")
-    print("spam email: ", email, "has ham% - spam% = ", (100 *
-                                                         (dictionaryWords / totalWords)) - (100 * (spamWords / totalWords)))
-    count = count + 1
-    if count == 30:
-        break
-
-count = 0
-for email in ham_word_count_container:
-    dictionaryWords = 0
-    spamWords = 0
-    totalWords = 0
-    for word in ham_word_count_container[email]:
-        totalWords = totalWords + 1
-        if(all_norm_dictionary_words.count(word.upper()) > 0):
-            dictionaryWords = dictionaryWords + 1
-            # print(word)
-        if(all_spam_dictionary_words.count(word.upper()) > 0):
-            spamWords = spamWords + 1
-
-    # print("ham email: ", email, "has %", 100*(dictionaryWords/totalWords), "dictionary words and ", "has %", 100*(spamWords/totalWords), "spam words")
-    print("ham email: ", email, "has ham% - spam% = ", (100 *
-                                                        (dictionaryWords / totalWords)) - (100 * (spamWords / totalWords)))
-    count = count + 1
-    if count == 30:
-        break
-
-
-# print(len(allpossiblewords))
